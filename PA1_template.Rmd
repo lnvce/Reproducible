@@ -1,0 +1,91 @@
+--- 
+title: "Reproducible Research: Peer Assessment 1" 
+output: 
+  html_document: 
+    keep_md: true 
+---
+
+
+## Loading and preprocessing the data
+```{r read_file}
+DF <- read.csv("activity.csv", header=T, sep=',', na.strings="NA", check.names=F, stringsAsFactors=F, comment.char="", quote='\"')
+DF2 <- DF
+DF2$Date <- as.Date(as.character(DF2$date,format="%Y-%m-%d"))
+```
+
+## What is mean total number of steps taken per day?
+```{r process_data}
+DF2$steps[is.na(DF2$steps)] <- 0
+cat(paste("Total number of actiivities taken ",nrow(DF2)))
+print ("\n")
+cat(paste("Mean steps taken per day ",round(mean(DF2$steps),1)))
+print ("\n")
+cat(paste("Median steps taken per day ",median(DF2$steps)))
+print ("\n")
+library(dplyr)
+tot_steps <- aggregate(DF2$steps, by=list(date=DF2$date), FUN=sum)
+names(tot_steps)[2]<-paste("total_steps")
+tot_steps$date <- as.Date(as.character(tot_steps$date,format="%Y-%m-%d"))
+with (tot_steps, hist(date, breaks = 61,  main="Total Number of Step Taken Each Day", ylab="Total Steps", xlab="Day", col="green"))
+```
+
+## What is the average daily activity pattern?
+```{r average_daily_patten}
+mean_steps <- aggregate(DF2$steps, by=list(date=DF2$date), FUN=mean)
+mean_steps$date <- as.Date(as.character(mean_steps$date,format="%Y-%m-%d"))
+with (mean_steps, plot(date, x, pch=20, type = "l"))
+abline(h=median(mean_steps$x))
+title(main="Mean Steps per Day", ylab="Average Number of Steps")
+```
+
+## Imputing missing values
+There are
+```{r} nrow(filter(DF, is.na(steps)))
+```
+  rows with missing values.
+This data set has
+```{r} nrows(DF)
+```
+ nows of data.
+
+```{r plot_data}
+DF3 <- DF
+DF3$Date <- as.Date(as.character(DF3$date,format="%Y-%m-%d"))
+DF3$steps[is.na(DF3$steps)] <- median(DF3$steps,na.rm = TRUE )
+tot_steps3 <- aggregate(DF3$steps, by=list(date=DF3$date), FUN=sum)
+names(tot_steps3)[2]<-paste("total_steps")
+tot_steps3$date <- as.Date(as.character(tot_steps3$date,format="%Y-%m-%d"))
+with (tot_steps3, hist(date, breaks = 61,  main="Total Number of Step Taken Each Day", ylab="Derived Total Steps", xlab="Day", col="red"))
+```
+Replacing the missing values does NOT impact the mean and median total number of steps taken per day.
+
+```{r}
+mean_steps3 <- aggregate(DF3$steps, by=list(date=DF3$date), FUN=mean)
+mean_steps3$date <- as.Date(as.character(mean_steps3$date,format="%Y-%m-%d"))
+par(mfrow = c(1, 1), mar = c(4, 4, 2, 1), oma = c(0, 0, 2, 0))
+with (mean_steps3, plot(date, x, xlab = "Date", ylab="Derived Average Number of Steps",main = "Derived Mean Steps per Day", type="l", col="red"))
+abline(h=median(mean_steps3$x))
+```
+
+The both graphs have the same plots.
+
+## Are there differences in activity patterns between weekdays and weekends?
+
+```{r find_DOW_pattern}
+DF3$DOW <- as.POSIXlt(DF3$date)$wday
+DOW_steps <- aggregate(DF3$steps, by=list(DOW=DF3$DOW), FUN=sum)
+DOW_steps$DOW[7] <- -1
+
+barplot(DOW_steps$x, col="blue", ylim=c(0, 90000))
+barplot(log10(DOW_steps$x), col="blue", ylim=c(0, 6))
+axis(1, at=1:7, label=c("Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"))
+mtext(side=1,text="Day of the Week",line=2.2)
+mtext(side=2,text="Derived Steps per Day of the Week (log10)",line=2.2)
+title(main="Total Steps per Day of the Week", col.main="red", font.main=4)
+```
+
+The log10(total steps) for weekends is ```{r} log10(DOW_steps$x[1] + DOW_steps$x[7]) ```
+The log10(total steps) for weekdays is ```{r} log10(DOW_steps$x[2] + DOW_steps$x[3]+  DOW_steps$x[4] +  DOW_steps$x[5] +  DOW_steps$x[6])) ```
+People are more active on weekends vs. weekdays.
+ 
+
